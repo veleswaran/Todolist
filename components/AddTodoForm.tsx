@@ -15,7 +15,7 @@ export default function AddTodoForm({ onAdd }: AddTodoFormProps) {
     title: '',
     description: '',
     dueDate: '',
-    status: 'todo',
+    status: 'todo' as ITodo['status'],
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,7 +98,7 @@ export default function AddTodoForm({ onAdd }: AddTodoFormProps) {
             <label className="block text-sm font-medium text-gray-400 mb-1.5">Status</label>
             <select
               value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as ITodo['status'] })}
               className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500/50 outline-none text-white transition-all appearance-none"
             >
               <option value="todo">Todo</option>
