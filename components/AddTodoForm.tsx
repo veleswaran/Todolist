@@ -8,14 +8,23 @@ interface AddTodoFormProps {
   onAdd: (todo: Partial<ITodo>) => Promise<void>;
 }
 
+const getTodayString = () => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 export default function AddTodoForm({ onAdd }: AddTodoFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    dueDate: '',
+    dueDate: getTodayString(),
     status: 'todo' as ITodo['status'],
+    category: 'personal' as ITodo['category'],
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,7 +34,13 @@ export default function AddTodoForm({ onAdd }: AddTodoFormProps) {
     setLoading(true);
     try {
       await onAdd(formData);
-      setFormData({ title: '', description: '', dueDate: '', status: 'todo' });
+      setFormData({
+        title: '',
+        description: '',
+        dueDate: getTodayString(),
+        status: 'todo',
+        category: 'personal',
+      });
       setIsOpen(false);
     } finally {
       setLoading(false);
@@ -79,6 +94,36 @@ export default function AddTodoForm({ onAdd }: AddTodoFormProps) {
             rows={3}
             className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500/50 outline-none text-white transition-all resize-none"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-400 mb-1.5">Category</label>
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, category: 'personal' })}
+              className={`py-3 px-4 rounded-xl border text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                formData.category === 'personal'
+                  ? 'bg-purple-500/10 border-purple-500 text-purple-400 shadow-lg shadow-purple-500/5'
+                  : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full bg-purple-500 ${formData.category === 'personal' ? 'animate-pulse' : ''}`} />
+              Personal
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, category: 'work' })}
+              className={`py-3 px-4 rounded-xl border text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                formData.category === 'work'
+                  ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400 shadow-lg shadow-indigo-500/5'
+                  : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full bg-indigo-500 ${formData.category === 'work' ? 'animate-pulse' : ''}`} />
+              Work
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

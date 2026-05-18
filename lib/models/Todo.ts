@@ -10,4 +10,5 @@ export interface ITodo {
   createdAt: Date;
   updatedAt: Date;
   statusNote?: string;
+  category: 'personal' | 'work';
 }

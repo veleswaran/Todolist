@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
       $or?: Array<{ [key: string]: { $regex: string; $options: string } }>;
       status?: string | { $ne: string };
       dueDate?: { $gte: Date; $lte: Date } | { $lt: Date };
+      category?: string;
     } = { isDeleted: isDeletedQuery };
 
     // Like query for title or description
@@ -49,6 +50,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Category filter
+    const category = searchParams.get('category');
+    if (category && category !== 'all') {
+      query.category = category;
+    }
+
     const todos = await db
       .collection('todos')
       .find(query)
@@ -79,6 +86,7 @@ export async function POST(request: NextRequest) {
       isDeleted: false,
       createdAt: new Date(),
       updatedAt: new Date(),
+      category: data.category || 'personal',
     };
 
     const result = await db.collection('todos').insertOne(newTodo);

@@ -22,6 +22,7 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [date, setDate] = useState(getTodayString());
+  const [category, setCategory] = useState('all');
   const [overdueTasks, setOverdueTasks] = useState<ITodo[]>([]);
   const [showOverduePopup, setShowOverduePopup] = useState(false);
 
@@ -32,6 +33,7 @@ export default function Home() {
       if (search) params.append('q', search);
       if (status !== 'all') params.append('status', status);
       if (date) params.append('date', date);
+      if (category !== 'all') params.append('category', category);
 
       const res = await fetch(`/api/todos?${params.toString()}`);
       const data = await res.json();
@@ -43,7 +45,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [search, status, date]);
+  }, [search, status, date, category]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -135,6 +137,7 @@ export default function Home() {
     setSearch('');
     setStatus('all');
     setDate(getTodayString());
+    setCategory('all');
   };
 
   return (
@@ -196,6 +199,8 @@ export default function Home() {
             setStatus={setStatus}
             date={date}
             setDate={setDate}
+            category={category}
+            setCategory={setCategory}
             onClear={clearFilters}
           />
 
@@ -222,11 +227,11 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-300">No tasks found</h3>
                 <p className="text-gray-500 mt-2 max-w-xs">
-                  {search || status !== 'all' || date 
+                  {search || status !== 'all' || date || category !== 'all'
                     ? "Try adjusting your filters to find what you're looking for." 
                     : "Your productivity journey starts here. Add your first task above!"}
                 </p>
-                {(search || status !== 'all' || date) && (
+                {(search || status !== 'all' || date || category !== 'all') && (
                   <button 
                     onClick={clearFilters}
                     className="mt-6 px-4 py-2 text-sm font-bold text-blue-400 hover:text-blue-300 transition-colors"

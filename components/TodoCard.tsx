@@ -15,6 +15,7 @@ export default function TodoCard({ todo, onUpdate, onDelete }: TodoCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalStatus, setModalStatus] = useState<ITodo['status']>(todo.status);
   const [modalNote, setModalNote] = useState(todo.statusNote || '');
+  const [modalCategory, setModalCategory] = useState<ITodo['category']>(todo.category || 'personal');
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -41,6 +42,7 @@ export default function TodoCard({ todo, onUpdate, onDelete }: TodoCardProps) {
   const handleOpenModal = () => {
     setModalStatus(todo.status);
     setModalNote(todo.statusNote || '');
+    setModalCategory(todo.category || 'personal');
     setIsModalOpen(true);
   };
 
@@ -49,6 +51,7 @@ export default function TodoCard({ todo, onUpdate, onDelete }: TodoCardProps) {
     onUpdate(todo._id as string, {
       status: modalStatus,
       statusNote: modalNote.trim(),
+      category: modalCategory,
     });
     setIsModalOpen(false);
   };
@@ -68,16 +71,28 @@ export default function TodoCard({ todo, onUpdate, onDelete }: TodoCardProps) {
                 Deleted
               </span>
             ) : (
-              <button
-                onClick={handleOpenModal}
-                className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                  todo.status
-                )} flex items-center gap-2 hover:scale-105 transition-transform duration-200 cursor-pointer`}
-                title="Change Status & Note"
-              >
-                {getStatusIcon(todo.status)}
-                {todo.status.charAt(0).toUpperCase() + todo.status.slice(1)}
-              </button>
+              <>
+                <button
+                  onClick={handleOpenModal}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                    todo.status
+                  )} flex items-center gap-2 hover:scale-105 transition-transform duration-200 cursor-pointer`}
+                  title="Change Status & Note"
+                >
+                  {getStatusIcon(todo.status)}
+                  {todo.status.charAt(0).toUpperCase() + todo.status.slice(1)}
+                </button>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 shadow-sm select-none ${
+                  todo.category === 'work'
+                    ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
+                    : 'bg-purple-500/10 border-purple-500/20 text-purple-400'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    todo.category === 'work' ? 'bg-indigo-400' : 'bg-purple-400'
+                  }`} />
+                  {todo.category ? todo.category.charAt(0).toUpperCase() + todo.category.slice(1) : 'Personal'}
+                </span>
+              </>
             )}
             {todo.dueDate && (
               <span className="flex items-center gap-1.5 text-xs text-gray-400">
@@ -206,6 +221,37 @@ export default function TodoCard({ todo, onUpdate, onDelete }: TodoCardProps) {
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              {/* Change Category Selector */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setModalCategory('personal')}
+                    className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      modalCategory === 'personal'
+                        ? 'bg-purple-500/10 border-purple-500 text-purple-400 shadow-lg shadow-purple-500/5'
+                        : 'bg-white/5 border-white/5 text-gray-400 hover:bg-white/10 hover:border-white/10'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full bg-purple-500 ${modalCategory === 'personal' ? 'animate-pulse' : ''}`} />
+                    Personal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModalCategory('work')}
+                    className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      modalCategory === 'work'
+                        ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400 shadow-lg shadow-indigo-500/5'
+                        : 'bg-white/5 border-white/5 text-gray-400 hover:bg-white/10 hover:border-white/10'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full bg-indigo-500 ${modalCategory === 'work' ? 'animate-pulse' : ''}`} />
+                    Work
+                  </button>
                 </div>
               </div>
 
