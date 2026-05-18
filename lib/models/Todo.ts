@@ -9,4 +9,5 @@ export interface ITodo {
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
+  statusNote?: string;
 }

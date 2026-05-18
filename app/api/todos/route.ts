@@ -5,13 +5,15 @@ export async function GET(request: NextRequest) {
   try {
     const db = await getDb();
     const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+    const isDeletedQuery = status === 'deleted';
 
     const query: {
       isDeleted: boolean;
       $or?: Array<{ [key: string]: { $regex: string; $options: string } }>;
-      status?: string;
-      dueDate?: { $gte: Date; $lte: Date };
-    } = { isDeleted: false };
+      status?: string | { $ne: string };
+      dueDate?: { $gte: Date; $lte: Date } | { $lt: Date };
+    } = { isDeleted: isDeletedQuery };
 
     // Like query for title or description
     const q = searchParams.get('q');
@@ -23,19 +25,28 @@ export async function GET(request: NextRequest) {
     }
 
     // Status filter
-    const status = searchParams.get('status');
-    if (status && status !== 'all') {
+    if (status && status !== 'all' && status !== 'deleted') {
       query.status = status;
     }
 
-    // Date filter
-    const date = searchParams.get('date');
-    if (date) {
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
-      query.dueDate = { $gte: startOfDay, $lte: endOfDay };
+    // Check if we want only overdue/prior incomplete tasks
+    const overdue = searchParams.get('overdue') === 'true';
+    if (overdue) {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      query.isDeleted = false;
+      query.status = { $ne: 'complete' };
+      query.dueDate = { $lt: startOfToday };
+    } else {
+      // Date filter
+      const date = searchParams.get('date');
+      if (date) {
+        const startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+        query.dueDate = { $gte: startOfDay, $lte: endOfDay };
+      }
     }
 
     const todos = await db

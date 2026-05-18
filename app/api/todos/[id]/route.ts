@@ -36,25 +36,40 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const db = await getDb();
     const { id } = await params;
+    
+    const { searchParams } = new URL(request.url);
+    const permanent = searchParams.get('permanent') === 'true';
 
-    // Soft delete as requested (create delete flag)
-    const result = await db.collection('todos').findOneAndUpdate(
-      { _id: new ObjectId(id) },
-      { $set: { isDeleted: true, updatedAt: new Date() } },
-      { returnDocument: 'after' }
-    );
+    if (permanent) {
+      const result = await db.collection('todos').findOneAndDelete({
+        _id: new ObjectId(id)
+      });
 
-    if (!result) {
-      return NextResponse.json({ error: 'Todo not found' }, { status: 404 });
+      if (!result) {
+        return NextResponse.json({ error: 'Todo not found' }, { status: 404 });
+      }
+
+      return NextResponse.json({ message: 'Todo permanently deleted', todo: result });
+    } else {
+      // Soft delete as requested (create delete flag)
+      const result = await db.collection('todos').findOneAndUpdate(
+        { _id: new ObjectId(id) },
+        { $set: { isDeleted: true, updatedAt: new Date() } },
+        { returnDocument: 'after' }
+      );
+
+      if (!result) {
+        return NextResponse.json({ error: 'Todo not found' }, { status: 404 });
+      }
+
+      return NextResponse.json({ message: 'Todo marked as deleted', todo: result });
     }
-
-    return NextResponse.json({ message: 'Todo marked as deleted', todo: result });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });

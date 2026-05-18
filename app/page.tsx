@@ -5,14 +5,25 @@ import TodoCard from '@/components/TodoCard';
 import FilterBar from '@/components/FilterBar';
 import AddTodoForm from '@/components/AddTodoForm';
 import { ITodo } from '@/lib/models/Todo';
-import { LayoutList, Loader2, Sparkles } from 'lucide-react';
+import { LayoutList, Loader2, Sparkles, AlertTriangle, Check } from 'lucide-react';
+import { format } from 'date-fns';
+
+const getTodayString = () => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
 
 export default function Home() {
   const [todos, setTodos] = useState<ITodo[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(getTodayString());
+  const [overdueTasks, setOverdueTasks] = useState<ITodo[]>([]);
+  const [showOverduePopup, setShowOverduePopup] = useState(false);
 
   const fetchTodos = useCallback(async () => {
     setLoading(true);
@@ -41,6 +52,40 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [fetchTodos]);
 
+  useEffect(() => {
+    const fetchOverdue = async () => {
+      try {
+        const res = await fetch('/api/todos?overdue=true');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setOverdueTasks(data);
+            setShowOverduePopup(true);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch overdue tasks:', error);
+      }
+    };
+    fetchOverdue();
+  }, []);
+
+  const handleResolveOverdueTask = async (id: string) => {
+    const res = await fetch(`/api/todos/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'complete' }),
+    });
+    if (res.ok) {
+      const updated = overdueTasks.filter((t) => t._id !== id);
+      setOverdueTasks(updated);
+      if (updated.length === 0) {
+        setShowOverduePopup(false);
+      }
+      fetchTodos();
+    }
+  };
+
   const handleAddTodo = async (todoData: Partial<ITodo>) => {
     const res = await fetch('/api/todos', {
       method: 'POST',
@@ -59,14 +104,26 @@ export default function Home() {
       body: JSON.stringify(updates),
     });
     if (res.ok) {
-      setTodos(todos.map((t) => (t._id === id ? { ...t, ...updates } : t)));
+      // Filter out tasks if their updated properties no longer match the current filter view
+      if (updates.isDeleted === false && status === 'deleted') {
+        setTodos(todos.filter((t) => t._id !== id));
+      } else if (updates.status && status !== 'all' && status !== 'deleted' && updates.status !== status) {
+        setTodos(todos.filter((t) => t._id !== id));
+      } else {
+        setTodos(todos.map((t) => (t._id === id ? { ...t, ...updates } : t)));
+      }
     }
   };
 
-  const handleDeleteTodo = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+  const handleDeleteTodo = async (id: string, permanent: boolean = false) => {
+    const confirmMessage = permanent
+      ? 'Are you sure you want to permanently delete this task? This action cannot be undone.'
+      : 'Are you sure you want to delete this task?';
     
-    const res = await fetch(`/api/todos/${id}`, {
+    if (!confirm(confirmMessage)) return;
+    
+    const url = permanent ? `/api/todos/${id}?permanent=true` : `/api/todos/${id}`;
+    const res = await fetch(url, {
       method: 'DELETE',
     });
     if (res.ok) {
@@ -77,7 +134,7 @@ export default function Home() {
   const clearFilters = () => {
     setSearch('');
     setStatus('all');
-    setDate('');
+    setDate(getTodayString());
   };
 
   return (
@@ -186,6 +243,82 @@ export default function Home() {
         <footer className="mt-20 pt-8 border-t border-white/5 text-center text-gray-600 text-sm">
           <p>© 2026 Premium Todo System • Powered by Next.js & MongoDB</p>
         </footer>
+        {/* Overdue Tasks Warning Popup Modal */}
+        {showOverduePopup && overdueTasks.length > 0 && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+            <div className="glass-dark border border-amber-500/20 max-w-lg w-full p-6 rounded-3xl shadow-2xl shadow-amber-500/5 space-y-6 animate-scale-in">
+              <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+                <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  <AlertTriangle className="w-6 h-6 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Prior Incomplete Tasks</h3>
+                  <p className="text-xs text-amber-400/80 mt-0.5">
+                    You have {overdueTasks.length} pending task{overdueTasks.length > 1 ? 's' : ''} from previous days.
+                  </p>
+                </div>
+              </div>
+
+              {/* Scrollable list of overdue tasks */}
+              <div className="max-h-[300px] overflow-y-auto pr-1 space-y-3 custom-scrollbar">
+                {overdueTasks.map((todo) => {
+                  let overdueDays = 0;
+                  if (todo.dueDate) {
+                    const due = new Date(todo.dueDate);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    due.setHours(0, 0, 0, 0);
+                    const diffTime = today.getTime() - due.getTime();
+                    overdueDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  }
+
+                  return (
+                    <div
+                      key={todo._id as string}
+                      className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/30 transition-all flex items-start justify-between gap-4 group"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-white truncate text-sm">
+                          {todo.title}
+                        </h4>
+                        {todo.dueDate && (
+                          <p className="text-xs text-amber-500 font-medium mt-1 flex items-center gap-1">
+                            Due: {format(new Date(todo.dueDate), 'MMM d, yyyy')}{' '}
+                            {overdueDays > 0 && `(${overdueDays} day${overdueDays > 1 ? 's' : ''} ago)`}
+                          </p>
+                        )}
+                        {todo.description && (
+                          <p className="text-xs text-gray-500 line-clamp-1 mt-1 leading-relaxed">
+                            {todo.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => handleResolveOverdueTask(todo._id as string)}
+                        className="p-2.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500 hover:text-white transition-all duration-200 cursor-pointer shadow-lg shadow-green-500/5 hover:scale-105"
+                        title="Mark Complete"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Footer buttons */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setShowOverduePopup(false)}
+                  className="px-5 py-2.5 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:bg-white/5 transition-all text-sm font-semibold cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

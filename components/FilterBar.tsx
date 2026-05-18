@@ -48,6 +48,7 @@ export default function FilterBar({
             <option value="todo">Todo</option>
             <option value="pending">Pending</option>
             <option value="complete">Complete</option>
+            <option value="deleted">Deleted</option>
           </select>
         </div>
 
