@@ -179,7 +179,7 @@ export default function TodoCard({ todo, onUpdate, onDelete }: TodoCardProps) {
       {/* Sleek, Premium Glassmorphic Status & Note Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/15 backdrop-blur-sm animate-fade-in">
-          <div className="glass-dark max-w-md w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-6 rounded-3xl border border-white/10 shadow-2xl space-y-6 animate-scale-in">
+          <div className="bg-[#151515] max-w-md w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-6 rounded-3xl border border-white/10 shadow-2xl space-y-6 animate-scale-in">
             <div className="flex items-center justify-between border-b border-white/5 pb-4">
               <div>
                 <h3 className="text-xl font-bold text-white">Update Status</h3>
