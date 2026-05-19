@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ITodo } from '@/lib/models/Todo';
 import { Calendar, CheckCircle2, Circle, Clock, Trash2, RotateCcw, MessageSquare, Edit2, X } from 'lucide-react';
 import { format } from 'date-fns';
@@ -16,6 +17,11 @@ export default function TodoCard({ todo, onUpdate, onDelete }: TodoCardProps) {
   const [modalStatus, setModalStatus] = useState<ITodo['status']>(todo.status);
   const [modalNote, setModalNote] = useState(todo.statusNote || '');
   const [modalCategory, setModalCategory] = useState<ITodo['category']>(todo.category || 'personal');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -177,8 +183,8 @@ export default function TodoCard({ todo, onUpdate, onDelete }: TodoCardProps) {
       </div>
 
       {/* Sleek, Premium Glassmorphic Status & Note Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/15 backdrop-blur-sm animate-fade-in">
+      {isModalOpen && mounted && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
           <div className="bg-[#151515] max-w-md w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-6 rounded-3xl border border-white/10 shadow-2xl space-y-6 animate-scale-in">
             <div className="flex items-center justify-between border-b border-white/5 pb-4">
               <div>
@@ -287,7 +293,8 @@ export default function TodoCard({ todo, onUpdate, onDelete }: TodoCardProps) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
