@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Google Drive backup credentials & logs
+google-drive-key.json
+*.json.bak
+backup-temp/
+backup.log
+
